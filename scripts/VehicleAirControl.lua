@@ -1,4 +1,3 @@
--- DEAKTIVIERE STEUERUNG WENN AUTO FALSCHRUM ODER IN LUFT
 Citizen.CreateThread(function()
     while true do
         Citizen.Wait(500)
@@ -13,50 +12,23 @@ Citizen.CreateThread(function()
             if model ~= deluxoHash and not IsThisModelABoat(model) and not IsThisModelAHeli(model) 
                 and not IsThisModelAPlane(model) and not IsThisModelABike(model) and not IsThisModelABicycle(model) then
                 
+                -- Überprüfen, ob das Fahrzeug in der Luft ist oder sich stark geneigt hat
                 if IsEntityInAir(veh) or math.abs(GetEntityRoll(veh)) > 75 then
-                    local isDoorBroken = IsVehicleDoorDamaged(veh, 0)  -- 0 for driver side door
-                    local isDoorFullyOpen = IsVehicleDoorFullyOpen(veh, 0)  -- 0 for driver side door
 
+                    -- Erstelle neuen Thread zum Deaktivieren der Steuerung
                     Citizen.CreateThread(function()
                         while DoesEntityExist(veh) and not IsEntityDead(veh) 
                               and (IsEntityInAir(veh) or math.abs(GetEntityRoll(veh)) > 75) do
                             
                             Citizen.Wait(0)
-                            DisableControlAction(0, 59, true) -- leaning left/right
-                            DisableControlAction(0, 60, true) -- leaning up/down
-                            
-                            if isDoorBroken or isDoorFullyOpen then
-                                -- DisableControlAction(0, 75, false)
-                            else
-                                DisableControlAction(0, 75, true)
-                            end
+                            DisableControlAction(0, 59, true) -- Leaning left/right deaktivieren
+                            DisableControlAction(0, 60, true) -- Leaning up/down deaktivieren
                         end
+
+                        -- Steuerung wieder aktivieren, wenn das Fahrzeug nicht mehr in der Luft oder falsch geneigt ist
+                        EnableControlAction(0, 59, true) -- Leaning left/right wieder aktivieren
+                        EnableControlAction(0, 60, true) -- Leaning up/down wieder aktivieren
                     end)
-                end
-            end
-        end
-    end
-end)
-
-
--- TÜR BENACHRICHTIGUNG-ABFRAGE WENN AUFM KOPF
-Citizen.CreateThread(function()
-    while true do
-        Citizen.Wait(0) 
-        
-        local playerPed = GetPlayerPed(-1)
-        if IsPedInAnyVehicle(playerPed, false) then
-            local vehicle = GetVehiclePedIsIn(playerPed, false)
-            
-            local roll = GetEntityRoll(vehicle)
-            if roll > 75.0 or roll < -75.0 then
-                local isDriverDoorFullyOpen = IsVehicleDoorFullyOpen(vehicle, 0)  -- 0 für die Fahrertür
-                
-                local isDriverDoorBroken = IsVehicleDoorDamaged(vehicle, 0)  -- 0 für die Fahrertür
-                
-                if not isDriverDoorFullyOpen and not isDriverDoorBroken and IsControlJustPressed(0, 23) then
-
-                    TriggerEvent('sc_noti:Noti', "error", "Fahrzeug zerstört", "Die Tür klemmt. Ich sollte Hilfe rufen.", 5000)
                 end
             end
         end
